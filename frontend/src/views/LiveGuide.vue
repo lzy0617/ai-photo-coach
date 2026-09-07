@@ -1,7 +1,25 @@
 <script setup>
-import ScoreCard from '../components/ScoreCard.vue'
+import { computed } from 'vue'
 import SuggestionCard from '../components/SuggestionCard.vue'
+import ImageUploader from '../components/ImageUploader.vue'
 import AppIcon from '../components/AppIcon.vue'
-defineProps({ result: Object, noPerson: Boolean, suggestions: Array })
+import { guideStatus } from '../utils/presentation'
+const props = defineProps({ result: Object, noPerson: Boolean, multiplePersons: Boolean, suggestions: Array, loading: Boolean, health: String })
+defineEmits(['select'])
+const status = computed(() => props.loading ? '分析中' : guideStatus(props.result, props.noPerson, props.multiplePersons))
 </script>
-<template><div class="result-stack"><SuggestionCard :suggestions="suggestions" :no-person="noPerson" :ready="!!result" immediate/><div class="metrics-pair"><ScoreCard label="构图评分" :score="noPerson ? undefined : result?.composition?.score" :comment="noPerson ? '未检测到人物，暂不评分' : result ? '基于人物位置、留白与占比' : '等待第一张照片'" large/><section class="card timing-card"><span>NPU 推理耗时</span><div class="timing-number">{{ Number.isFinite(result?.timing?.infer_ms) ? result.timing.infer_ms.toFixed(2) : '—' }} <small>ms</small></div><p class="small muted"><AppIcon name="chip" :size="14"/> Ascend 边缘计算</p></section></div><section class="card realtime-card"><div><AppIcon name="camera"/><strong>让指导跟上你的镜头</strong></div><p>实时取景与连续构图建议，即将到来。</p><button class="button secondary" disabled>开始实时指导 <span class="pill">即将支持</span></button></section><p class="footnote">每一种构图都有可能。AI 建议，是创作的起点。</p></div></template>
+<template>
+  <div class="result-stack live-guide">
+    <SuggestionCard :suggestions="suggestions" :no-person="noPerson" :multiple-persons="multiplePersons" :ready="!!result" :loading="loading" immediate/>
+    <div class="guide-status" aria-live="polite">
+      <span>构图状态：<strong>{{ status }}</strong></span>
+      <span><AppIcon name="chip" :size="17"/>Edge {{ health === 'online' ? '在线' : health === 'checking' ? '连接中' : '未连接' }}</span>
+      <span>NPU {{ Number.isFinite(result?.timing?.infer_ms) ? `${result.timing.infer_ms.toFixed(1)} ms` : '等待推理' }}</span>
+    </div>
+    <div class="guide-actions">
+      <button class="button primary" disabled aria-describedby="camera-pending"><AppIcon name="camera"/>开启实时指导</button>
+      <p id="camera-pending" class="upload-note">实时摄像头尚未启用，将在 HTTPS 部署与摄像头接入完成后开放。</p>
+      <ImageUploader simulation :disabled="loading" @select="$emit('select', $event)"/>
+    </div>
+  </div>
+</template>

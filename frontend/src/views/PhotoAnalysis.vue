@@ -1,9 +1,40 @@
 <script setup>
+import { computed } from 'vue'
 import ScoreCard from '../components/ScoreCard.vue'
 import SuggestionCard from '../components/SuggestionCard.vue'
 import AppIcon from '../components/AppIcon.vue'
-defineProps({ result: Object, noPerson: Boolean, suggestions: Array })
-const dimensions = [{ key: 'position', label: '主体位置' }, { key: 'headroom', label: '头顶留白' }, { key: 'subject_size', label: '主体大小' }]
-const brightnessLabels = { dark: '偏暗', slightly_dark: '略暗', normal: '自然', slightly_bright: '略亮', bright: '偏亮' }
+import { brightnessPresentation, dimensionPresentation, REFERENCE_DESCRIPTION } from '../utils/presentation'
+const props = defineProps({ result: Object, noPerson: Boolean, multiplePersons: Boolean, suggestions: Array })
+const dimensions = [{ key: 'position', label: '主体位置' }, { key: 'headroom', label: '上方留白' }, { key: 'subject_size', label: '主体占比' }]
+const items = computed(() => dimensions.map(item => ({ ...item, ...dimensionPresentation(item.key, props.noPerson ? null : props.result?.composition?.[item.key]) })))
+const brightness = computed(() => brightnessPresentation(props.result?.brightness))
 </script>
-<template><div class="result-stack"><ScoreCard label="构图总分" :score="noPerson ? undefined : result?.composition?.score" :comment="noPerson ? '未检测到人物，暂不评分' : '由主体位置、头顶留白和主体大小综合评估'" large/><div class="dimension-cards"><ScoreCard v-for="item in dimensions" :key="item.key" :label="item.label" :score="noPerson ? undefined : result?.composition?.[item.key]?.score" :comment="noPerson ? '请拍摄包含人物的照片' : result?.composition?.[item.key]?.comment"/></div><section class="card brightness-card"><div class="section-bar"><span><AppIcon name="sun"/>整体亮度</span><span class="pill">{{ result?.brightness?.status === 'error' ? '暂不可用' : brightnessLabels[result?.brightness?.tendency] || '等待分析' }}</span></div><p>{{ result?.brightness?.comment || '分析后展示画面的亮度状态。' }}</p><p class="small muted">亮度描述不计入构图分数；明暗也可以是你的创作选择。</p></section><SuggestionCard :suggestions="suggestions" :no-person="noPerson" :ready="!!result"/><section class="card deep-card"><span class="eyebrow">BEYOND COMPOSITION</span><h3><AppIcon name="spark"/>不止构图，更懂你的表达</h3><p>从光影、氛围到叙事，探索照片的更多可能。</p><button class="button primary" disabled>AI 深度点评 <span class="pill">即将支持</span></button><span class="small muted">云端多模态大模型 · 正在接入</span></section></div></template>
+<template>
+  <div class="result-stack">
+    <ScoreCard label="构图参考分" :score="noPerson ? undefined : result?.composition?.score" :badge="multiplePersons ? '单人规则参考' : ''" :comment="noPerson ? '暂未检测到清晰人物，暂不提供构图参考分。' : REFERENCE_DESCRIPTION" large/>
+    <div class="dimension-cards">
+      <section v-for="item in items" :key="item.key" class="card dimension-card">
+        <div class="section-bar"><h3>{{ item.label }}</h3><strong class="dimension-state">{{ noPerson ? '暂不可用' : item.state }}</strong></div>
+        <p>{{ noPerson ? '人物清晰入镜后，可查看这一关系。' : item.comment }}</p>
+      </section>
+    </div>
+    <section class="card brightness-card">
+      <div class="section-bar"><h3><AppIcon name="sun"/>整体亮度</h3><span class="pill">{{ brightness.state }}</span></div>
+      <p>{{ brightness.comment }}</p>
+      <p v-if="brightness.notes.length">{{ brightness.notes.join('；') }}</p>
+      <p class="small muted">明暗也可能是创作选择，亮度统计不计入构图参考分。</p>
+    </section>
+    <SuggestionCard :suggestions="suggestions" :no-person="noPerson" :multiple-persons="multiplePersons" :ready="!!result"/>
+    <details v-if="result && !noPerson" class="card technical-details">
+      <summary>详细数据 <span class="muted">几何规则参考</span></summary>
+      <p class="small muted">以下为边缘端规则数值，不代表精确的摄影质量评价。</p>
+      <dl><template v-for="item in dimensions" :key="item.key"><dt>{{ item.label }}</dt><dd>{{ Number.isFinite(result.composition?.[item.key]?.score) ? `${result.composition[item.key].score} / 100` : '暂无数据' }}</dd></template></dl>
+    </details>
+    <section class="card deep-card">
+      <h3><AppIcon name="spark"/>AI 深度点评 <span class="pill">即将支持</span></h3>
+      <p>结合光影、背景、姿态与画面语义，提供更完整的摄影建议。</p>
+      <button class="button primary" disabled>AI 深度点评 <span class="pill">即将支持</span></button>
+      <span class="small muted">云端多模态模型 · 正在接入</span>
+    </section>
+  </div>
+</template>

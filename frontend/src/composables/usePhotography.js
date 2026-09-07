@@ -1,13 +1,15 @@
 import { computed, onUnmounted, ref } from 'vue'
 import { analyzeFast } from '../api/photography'
+import { friendlyText, NO_PERSON_MESSAGE } from '../utils/presentation'
 export function usePhotography() {
   const source = ref(''), file = ref(null), result = ref(null), loading = ref(false), error = ref('')
   let selection = 0
   const noPerson = computed(() => !!result.value && (result.value.composition.status === 'no_person' || !result.value.detection.persons.length))
+  const multiplePersons = computed(() => (result.value?.detection?.persons?.length ?? 0) > 1)
   const suggestions = computed(() => {
-    if (noPerson.value) return ['请让人物清晰地出现在画面中，再拍摄一张照片。']
+    if (noPerson.value) return [NO_PERSON_MESSAGE]
     const items = result.value?.composition?.suggestions ?? result.value?.suggestions ?? []
-    return items.filter(item => typeof item === 'string')
+    return Array.isArray(items) ? items.filter(item => typeof item === 'string').map(friendlyText) : []
   })
   async function analyze() {
     if (!file.value || loading.value) return
@@ -36,5 +38,5 @@ export function usePhotography() {
     await analyze()
   }
   onUnmounted(() => { selection++; if (source.value) URL.revokeObjectURL(source.value) })
-  return { source, file, result, loading, error, noPerson, suggestions, selectFile, analyze }
+  return { source, file, result, loading, error, noPerson, multiplePersons, suggestions, selectFile, analyze }
 }
