@@ -1,30 +1,40 @@
 import os
+import json
+import logging
 import tempfile
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.concurrency import run_in_threadpool
 
 from detector import AscendYoloDetector
 from composition import analyze_composition
 from image_quality import analyze_brightness
+from services.vlm_client import VLMClient, VLMError
 
 
 detector = None
+vlm_client = None
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global detector
+    global detector, vlm_client
 
     detector = AscendYoloDetector(
         "/root/photo-ai/backend/models/yolov5s_nms.om",
         person_only=True
     )
+    vlm_client = VLMClient()
 
     yield
 
-    detector.close()
+    if vlm_client:
+        vlm_client.close()
+    if detector:
+        detector.close()
 
 
 app = FastAPI(
@@ -130,3 +140,79 @@ async def analyze_fast(
             os.unlink(path)
         except Exception:
             pass
+
+
+def _parse_metrics(raw_metrics: str):
+    try:
+        metrics = json.loads(raw_metrics)
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="metrics 必须是合法 JSON") from exc
+
+    if not isinstance(metrics, dict):
+        raise HTTPException(status_code=422, detail="metrics 必须是 JSON 对象")
+
+    persons = metrics.get("persons")
+    if persons is None and isinstance(metrics.get("detection"), dict):
+        persons = metrics["detection"].get("persons")
+    if not isinstance(persons, list) or not isinstance(metrics.get("composition"), dict):
+        raise HTTPException(
+            status_code=422,
+            detail="metrics 必须包含 YOLO persons 和 composition 数据",
+        )
+    return metrics
+
+
+@app.post("/api/deep-analyze")
+async def deep_analyze(
+    image: UploadFile = File(...),
+    metrics: str = Form(...),
+):
+    """Forward one user-selected YOLO/CV keyframe to the cloud VLM."""
+    fast_analysis = _parse_metrics(metrics)
+    image_bytes = await image.read()
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="image 不能为空")
+    if len(image_bytes) > 20 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="image 不能超过 20 MB")
+
+    if vlm_client is None:
+        logger.error("Deep analysis requested before VLM client initialization")
+        return {
+            "success": False,
+            "mode": "deep",
+            "error": "VLM_UNAVAILABLE",
+            "message": "AI 深度分析暂时不可用",
+            "fast_analysis": fast_analysis,
+        }
+
+    try:
+        deep_analysis = await run_in_threadpool(
+            vlm_client.analyze,
+            image_bytes,
+            fast_analysis,
+        )
+    except VLMError as exc:
+        logger.warning("Deep analysis degraded to fast result: %s", exc)
+        return {
+            "success": False,
+            "mode": "deep",
+            "error": exc.code,
+            "message": exc.public_message,
+            "fast_analysis": fast_analysis,
+        }
+    except Exception:
+        logger.exception("Unexpected deep analysis error")
+        return {
+            "success": False,
+            "mode": "deep",
+            "error": "VLM_UNAVAILABLE",
+            "message": "AI 深度分析暂时不可用",
+            "fast_analysis": fast_analysis,
+        }
+
+    return {
+        "success": True,
+        "mode": "deep",
+        "fast_analysis": fast_analysis,
+        "deep_analysis": deep_analysis,
+    }

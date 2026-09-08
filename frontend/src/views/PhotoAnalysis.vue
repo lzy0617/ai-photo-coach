@@ -1,13 +1,18 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { savePhoto } from '../utils/savePhoto'
+import { prepareFastImage } from '../utils/image'
+import { requestDeepReview } from '../api/photography'
 import TechnicalInfo from '../components/TechnicalInfo.vue'
 import ScoreCard from '../components/ScoreCard.vue'
 import SuggestionCard from '../components/SuggestionCard.vue'
+import DeepAnalysisCard from '../components/DeepAnalysisCard.vue'
 import AppIcon from '../components/AppIcon.vue'
 import { brightnessPresentation, dimensionPresentation, REFERENCE_DESCRIPTION } from '../utils/presentation'
 const props = defineProps({ file: Object, result: Object, noPerson: Boolean, multiplePersons: Boolean, suggestions: Array })
 const saving = ref(false), saveMessage = ref('')
+const deepLoading = ref(false), deepResult = ref(null), deepError = ref('')
+let deepRevision = 0
 async function saveOriginal() {
   if (saving.value) return
   saving.value = true; saveMessage.value = ''
@@ -18,6 +23,28 @@ async function saveOriginal() {
 const dimensions = [{ key: 'position', label: '主体位置' }, { key: 'headroom', label: '上方留白' }, { key: 'subject_size', label: '主体占比' }]
 const items = computed(() => dimensions.map(item => ({ ...item, ...dimensionPresentation(item.key, props.noPerson ? null : props.result?.composition?.[item.key]) })))
 const brightness = computed(() => brightnessPresentation(props.result?.brightness))
+watch(() => props.file, () => {
+  deepRevision++
+  deepLoading.value = false; deepResult.value = null; deepError.value = ''
+})
+async function analyzeDeep() {
+  if (!props.file || !props.result || deepLoading.value) return
+  const revision = deepRevision
+  deepLoading.value = true; deepError.value = ''
+  try {
+    // 快速分析副本是 JPEG，且与 YOLO metrics 保持同一画面比例。
+    const image = await prepareFastImage(props.file)
+    if (revision !== deepRevision) return
+    const response = await requestDeepReview(image, props.result)
+    if (revision !== deepRevision) return
+    if (!response.success) { deepError.value = response.message || 'AI 深度分析暂时不可用'; return }
+    deepResult.value = response.deep_analysis
+  } catch (error) {
+    if (revision === deepRevision) deepError.value = error.message || 'AI 深度分析暂时不可用'
+  } finally {
+    if (revision === deepRevision) deepLoading.value = false
+  }
+}
 </script>
 <template>
   <div class="result-stack">
@@ -46,11 +73,6 @@ const brightness = computed(() => brightnessPresentation(props.result?.brightnes
       <dl v-if="!noPerson"><template v-for="item in dimensions" :key="item.key"><dt>{{ item.label }}</dt><dd>{{ Number.isFinite(result.composition?.[item.key]?.score) ? `${result.composition[item.key].score} / 100` : '暂无数据' }}</dd></template></dl>
       <TechnicalInfo :result="result"/>
     </details>
-    <section class="card deep-card">
-      <h3><AppIcon name="spark"/>AI 深度点评 <span class="pill">即将支持</span></h3>
-      <p>结合光影、背景、姿态与画面语义，提供更完整的摄影建议。</p>
-      <button class="button primary" disabled>AI 深度点评 <span class="pill">即将支持</span></button>
-      <span class="small muted">云端多模态模型 · 正在接入</span>
-    </section>
+    <DeepAnalysisCard :result="deepResult" :loading="deepLoading" :error="deepError" :disabled="!file || !result" @analyze="analyzeDeep"/>
   </div>
 </template>

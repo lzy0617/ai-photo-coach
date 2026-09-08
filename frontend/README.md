@@ -46,7 +46,7 @@ npm run preview
 
 ## 结构
 
-- `src/api/photography.js`：统一 API 地址、超时、请求错误、深度点评占位。
+- `src/api/photography.js`：统一 API 地址、超时、请求错误及快速/深度请求互斥。
 - `src/composables/usePhotography.js`：两个 Tab 共用照片、结果、上传校验及重试状态。
 - `src/composables/useCamera.js`：getUserMedia、等比例 640px JPEG 抓帧、媒体轨道释放及迟到权限结果保护。
 - `src/components/PhotoViewer.vue`、`CompositionOverlay.vue`：按原始比例显示照片与归一化覆盖层，支持开关三分线和人物框。
@@ -57,7 +57,7 @@ npm run preview
 
 没有内置假分析数据。未连接 Edge 时保留完整页面，显示真实离线状态。无人物时隐藏评分，而非显示零分；亮度只作为状态，忽略后端亮度 score。
 
-照片上传后自动分析，切换 Tab 保留照片与结果。拍照入口使用文件输入的 `capture` 提示，实际行为由浏览器决定。实时指导已接入摄像头，云端点评仍为禁用的「即将支持」状态。摄像头需要 HTTPS 或 localhost；手机访问普通局域网 HTTP 地址不能启用摄像头。
+照片上传后自动分析，切换 Tab 保留照片与结果。拍照入口使用文件输入的 `capture` 提示，实际行为由浏览器决定。实时指导已接入摄像头；选择 `AI 深度分析` 后，由用户点击按钮按需抓取一帧并携带最近一次 YOLO/CV 结果调用边缘端。照片诊断也可在快速分析完成后按需请求。摄像头需要 HTTPS 或 localhost；手机访问普通局域网 HTTP 地址不能启用摄像头。
 
 ## 设备联调清单
 
@@ -79,6 +79,7 @@ npm run preview
 - 暂停、切换 Tab、页面进入后台或卸载均停止轨道与后续抓帧。再次开启需要点击按钮；权限弹窗迟到返回的流也会释放。
 - 视频容器按 videoWidth / videoHeight 定比，video 与 Overlay 共用矩形，使用 contain、不镜像。设备旋转时清除旧检测框。框来自最近完成分析的帧，运动时会有网络与推理带来的时间延迟。
 - 开发控制台记录帧尺寸、JPEG 字节数、调用往返耗时（包含可能的互斥等待）与后端 total_ms。
+- `Only YOLO` 不触发云端请求；`AI 深度分析` 也不会按帧调用。深度请求在途时按钮显示 loading，重复点击复用同一请求；失败只显示深度分析错误，摄像头和实时 YOLO 循环继续运行。
 
 真机检查：允许/拒绝权限、横竖屏旋转、快速暂停再开启、分析中切换 Tab、后台再返回、Edge 断网后恢复；Network 面板确认 analyze-fast 请求不重叠。自动测试覆盖请求互斥和错误释放、迟到摄像头权限、抓帧缩放与建议优先级；真实摄像头和 Tunnel 延迟需设备验证。
 

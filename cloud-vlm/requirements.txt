@@ -1,0 +1,7 @@
+# ModelArts 镜像已经提供 torch、torch-npu 和匹配的 CANN，请勿在这里覆盖它们。
+transformers>=4.57,<4.58
+accelerate>=1.0,<2
+fastapi>=0.110,<1
+uvicorn>=0.27,<1
+python-multipart>=0.0.9,<1
+Pillow>=10,<12

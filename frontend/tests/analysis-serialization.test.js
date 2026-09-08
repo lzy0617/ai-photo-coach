@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { analyzeFast } from '../src/api/photography.js'
+import { analyzeFast, requestDeepReview } from '../src/api/photography.js'
 
 test('all analysis callers serialize; canceled waiters never send; errors release the lock', async t => {
   const pending = []
@@ -32,4 +32,28 @@ test('all analysis callers serialize; canceled waiters never send; errors releas
   pending.shift()(true)
   await retry
   assert.equal(maximum, 1)
+})
+
+test('rapid deep-analysis calls share one request and send the latest YOLO metrics', async t => {
+  let requests = 0, release, sentMetrics
+  t.mock.method(globalThis, 'fetch', async (_url, options) => {
+    requests++
+    sentMetrics = JSON.parse(options.body.get('metrics'))
+    assert.equal(options.body.get('image').name, 'keyframe.jpg')
+    return new Promise(resolve => { release = () => resolve({
+      ok: true,
+      json: async () => ({ success: true, mode: 'deep', fast_analysis: sentMetrics, deep_analysis: { suggestions: [] } }),
+    }) })
+  })
+  const image = new File(['frame'], 'keyframe.jpg', { type: 'image/jpeg' })
+  const metrics = { detection: { persons: [{}] }, composition: { score: 80 } }
+
+  const first = requestDeepReview(image, metrics)
+  const repeated = requestDeepReview(image, metrics)
+  assert.equal(requests, 1)
+  release()
+
+  assert.deepEqual((await first).fast_analysis, metrics)
+  assert.deepEqual((await repeated).deep_analysis, { suggestions: [] })
+  assert.equal(requests, 1)
 })

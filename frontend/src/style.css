@@ -533,6 +533,20 @@ small,.small {
 .deep-card .pill {
   background:#ffffff33;
   color:white}
+.deep-card .pill { background:#eaf2f8; color:#668ba6; }
+.deep-source { margin-bottom:14px!important; }
+.deep-loading,.deep-error { display:flex; align-items:center; gap:10px; padding:13px; margin-bottom:14px; border-radius:10px; line-height:1.6; }
+.deep-loading { color:#296e9b; background:#edf7fd; }
+.deep-error { color:#80613b; background:#fffaf2; border:1px solid #e8d9c4; }
+.deep-details { display:grid; grid-template-columns:52px 1fr; gap:9px 12px; margin:0 0 16px; font-size:13px; line-height:1.65; }
+.deep-details dt { color:#668ba6; }
+.deep-details dd { margin:0; color:#2f5068; }
+.deep-suggestions { display:grid; gap:10px; margin:0 0 18px; padding-left:21px; color:#397fae; }
+.deep-suggestions li { padding-left:3px; }
+.deep-suggestions strong,.deep-suggestions span { display:block; color:#294b63; line-height:1.65; }
+.deep-suggestions strong { font-size:14px; font-weight:500; }
+.deep-suggestions span { margin-top:2px; color:var(--muted); font-size:12px; }
+.button-spinner { width:16px; height:16px; border-color:#ffffff66; border-top-color:#fff; }
 .error-card,.notice {
   margin:12px 0;
   padding:15px;
@@ -772,6 +786,9 @@ footer {
 .hud-advice-text { font-size: 17px; line-height: 1.45; height: 2.9em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .hud-note { font-size: 12px; line-height: 1.5; margin-top: 3px; color: #d8e7f3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .camera-session .camera-controls { gap: 4px; padding: 6px 14px 10px; }
+.analysis-mode-switch { display:grid; grid-template-columns:1fr 1fr; width:min(100%, 340px); padding:3px; margin-bottom:2px; border-radius:10px; background:#e7eff6; }
+.analysis-mode-switch button { min-height:34px; border:0; border-radius:8px; background:transparent; color:#688197; font-size:12px; }
+.analysis-mode-switch button.active { background:white; color:#276f9e; box-shadow:0 1px 5px #17344a18; }
 .camera-session .zoom-controls { gap: 8px; height: 40px; max-width: 340px; }
 .camera-session .zoom-controls button { min-width: 40px; min-height: 40px; border: 0; background: transparent; }
 .camera-session .zoom-controls input { min-height: 40px; }

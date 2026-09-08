@@ -6,9 +6,10 @@ import TechnicalInfo from '../components/TechnicalInfo.vue'
 import ImageUploader from '../components/ImageUploader.vue'
 import PhotoViewer from '../components/PhotoViewer.vue'
 import CompositionOverlay from '../components/CompositionOverlay.vue'
+import DeepAnalysisCard from '../components/DeepAnalysisCard.vue'
 import AppIcon from '../components/AppIcon.vue'
 import { useCamera } from '../composables/useCamera'
-import { analyzeFast } from '../api/photography'
+import { analyzeFast, requestDeepReview } from '../api/photography'
 import { liveAdvice, MULTI_PERSON_MESSAGE } from '../utils/presentation'
 const props = defineProps({ busy: Boolean, health: String })
 // 模拟照片属于此视图，复用上传逻辑但不读写照片诊断状态。
@@ -20,6 +21,8 @@ const emit = defineEmits(['capture'])
 const camera = useCamera()
 const { zoomSupported, zoom, zoomMin, zoomMax, zoomStep, zoomBusy, cameraNotice } = camera
 const takingPhoto = ref(false)
+const analysisMode = ref('fast')
+const deepLoading = ref(false), deepResult = ref(null), deepError = ref('')
 let framingRevision = 0
 const video = ref(null), running = ref(false), starting = ref(false), analyzing = ref(false)
 const liveResult = ref(null), liveMode = ref(false), cameraError = ref(''), networkError = ref('')
@@ -33,13 +36,13 @@ const advice = computed(() => liveMode.value ? (stability.value.stable ? '✓ �
 const edge = computed(() => responseHealth.value || props.health)
 const frameStyle = computed(() => ({ aspectRatio: `${frameWidth.value} / ${frameHeight.value}`, width: `min(100%, calc(var(--camera-frame-height) * ${frameWidth.value / frameHeight.value}))` }))
 const hudAdvice = computed(() => cameraError.value || (networkError.value ? '正在等待分析服务' : noPerson.value || !liveResult.value ? '让人物进入画面' : advice.value))
-const hudNote = computed(() => multiplePersons.value ? '多人场景 · 仅作单人规则位置参考' : takingPhoto.value ? '正在保存照片…' : starting.value ? '正在开启摄像头' : !running.value ? '已暂停' : analyzing.value ? '正在分析…' : '实时取景')
+const hudNote = computed(() => `实时建议 · YOLO / CV · ${multiplePersons.value ? '多人场景，仅作单人规则位置参考' : takingPhoto.value ? '正在保存照片…' : starting.value ? '正在开启摄像头' : !running.value ? '已暂停' : analyzing.value ? '正在分析…' : '实时取景'}`)
 function resize() {
   if (!video.value?.videoWidth) return
   frameWidth.value = video.value.videoWidth
   frameHeight.value = video.value.videoHeight
   // 旋转设备后丢弃旧方向的检测框。
-  liveResult.value = null; stability.value = initialStability()
+  liveResult.value = null; deepResult.value = null; stability.value = initialStability()
 }
 function pause() {
   session?.abort()
@@ -48,6 +51,10 @@ function pause() {
   camera.stop()
   if (video.value) video.value.srcObject = null
   liveResult.value = null; stability.value = initialStability()
+}
+function setAnalysisMode(mode) {
+  analysisMode.value = mode
+  deepError.value = ''
 }
 function sleep(ms, signal) {
   return new Promise(resolve => {
@@ -102,7 +109,7 @@ async function start(facing = camera.facingMode.value) {
   const controller = new AbortController()
   session = controller
   starting.value = true; liveMode.value = true
-  cameraError.value = ''; networkError.value = ''; responseHealth.value = ''; liveResult.value = null; stability.value = initialStability()
+  cameraError.value = ''; networkError.value = ''; responseHealth.value = ''; liveResult.value = null; deepResult.value = null; deepError.value = ''; stability.value = initialStability()
   try {
     const stream = await camera.start(facing)
     if (!stream || controller.signal.aborted) return
@@ -135,6 +142,21 @@ async function takePhoto() {
     if (session === controller) cameraError.value = error.message || '拍摄失败，请重试。'
   } finally { takingPhoto.value = false }
 }
+async function analyzeDeep() {
+  if (!running.value || !liveResult.value || deepLoading.value || zoomBusy.value) return
+  const controller = session
+  const metrics = liveResult.value
+  deepLoading.value = true; deepError.value = ''
+  try {
+    const image = await camera.capture(video.value)
+    const response = await requestDeepReview(image, metrics)
+    if (session !== controller || controller.signal.aborted) return
+    if (!response.success) { deepError.value = response.message || 'AI 深度分析暂时不可用'; return }
+    deepResult.value = response.deep_analysis
+  } catch (error) {
+    if (session === controller && !controller.signal.aborted) deepError.value = error.message || 'AI 深度分析暂时不可用'
+  } finally { deepLoading.value = false }
+}
 async function switchCamera() {
   if (!running.value || takingPhoto.value || zoomBusy.value) return
   const nextFacing = camera.facingMode.value === 'environment' ? 'user' : 'environment'
@@ -144,7 +166,7 @@ async function switchCamera() {
 async function changeZoom(value) {
   if (!running.value || zoomBusy.value || takingPhoto.value) return
   framingRevision++
-  liveResult.value = null; stability.value = initialStability()
+  liveResult.value = null; deepResult.value = null; stability.value = initialStability()
   await camera.setZoom(Number(value))
   framingRevision++
   liveResult.value = null; stability.value = initialStability()
@@ -174,6 +196,10 @@ onUnmounted(() => { pause(); document.removeEventListener('visibilitychange', vi
         </div>
       </div></div>
       <div class="camera-controls">
+        <div class="analysis-mode-switch" role="radiogroup" aria-label="分析模式">
+          <button role="radio" :aria-checked="analysisMode === 'fast'" :class="{ active: analysisMode === 'fast' }" @click="setAnalysisMode('fast')">Only YOLO</button>
+          <button role="radio" :aria-checked="analysisMode === 'deep'" :class="{ active: analysisMode === 'deep' }" @click="setAnalysisMode('deep')">AI 深度分析</button>
+        </div>
         <div v-if="running && zoomSupported" class="zoom-controls">
           <button aria-label="缩小" :disabled="zoomBusy || takingPhoto || zoom <= zoomMin" @click="changeZoom(zoom - zoomStep)">−</button>
           <output aria-label="当前缩放倍率">{{ zoom.toFixed(1) }}×</output>
@@ -192,7 +218,8 @@ onUnmounted(() => { pause(); document.removeEventListener('visibilitychange', vi
         </div>
       </div>
     </section>
-    <template v-else>
+    <DeepAnalysisCard v-if="liveMode && analysisMode === 'deep'" live :result="deepResult" :loading="deepLoading" :error="deepError" :disabled="!running || !liveResult || zoomBusy" @analyze="analyzeDeep"/>
+    <template v-if="!liveMode">
       <PhotoViewer :source="source" :result="result" :loading="loading" guide/>
       <section class="live-advice" aria-live="polite"><h3>{{ advice }}</h3><p v-if="result" class="small muted">当前为单张照片模拟结果</p></section>
       <p v-if="multiplePersons" class="notice" role="status">{{ MULTI_PERSON_MESSAGE }}</p>

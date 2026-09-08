@@ -39,7 +39,25 @@ export async function analyzeFast(image, { signal } = {}) {
   try { return await operation }
   finally { if (analysisInFlight === operation) analysisInFlight = null }
 }
-// 云端接口确定后在此实现；当前不会发送请求。
-export async function requestDeepReview() {
-  throw new Error('AI 深度点评即将支持')
+// 深度分析与实时 YOLO 使用不同的锁；连续点击复用同一个在途请求。
+let deepAnalysisInFlight = null
+export async function requestDeepReview(image, metrics) {
+  if (deepAnalysisInFlight) {
+    if (deepAnalysisInFlight.image === image && deepAnalysisInFlight.metrics === metrics) return deepAnalysisInFlight.operation
+    throw new Error('已有一项 AI 深度分析正在进行，请稍后重试。')
+  }
+  const operation = (async () => {
+    const body = new FormData()
+    body.append('image', image, image.name || 'frame.jpg')
+    body.append('metrics', JSON.stringify(metrics))
+    const data = await request('/api/deep-analyze', { method: 'POST', body }, 120000)
+    if (data.mode !== 'deep' || typeof data.success !== 'boolean' || !data.fast_analysis) {
+      throw new Error('AI 深度分析结果不完整，请重试。')
+    }
+    if (data.success && !data.deep_analysis) throw new Error('AI 深度分析结果不完整，请重试。')
+    return data
+  })()
+  deepAnalysisInFlight = { image, metrics, operation }
+  try { return await operation }
+  finally { if (deepAnalysisInFlight?.operation === operation) deepAnalysisInFlight = null }
 }
