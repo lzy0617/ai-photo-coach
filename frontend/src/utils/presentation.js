@@ -65,3 +65,23 @@ export function guideStatus(result, noPerson, multiplePersons) {
   if (Array.isArray(suggestions) && suggestions.some(text => typeof text === 'string' && /构图较稳定|构图关系较稳定/.test(text))) return '关系较稳定'
   return '可尝试调整'
 }
+
+// 按现有建议的类别排序，不增加新的图像评分规则。
+export function liveAdvice(result) {
+  if (!result) return '让人物进入画面，等待一次构图分析。'
+  if (result.composition?.status === 'no_person' || !result.detection?.persons?.length) return NO_PERSON_MESSAGE
+  const raw = result.composition?.suggestions ?? result.suggestions
+  const items = Array.isArray(raw) ? raw.filter(text => typeof text === 'string') : []
+  const priority = text => /向左|向右|边缘|横向位置/.test(text) ? 0
+    : /留白|上方|顶部|头顶/.test(text) ? 1
+      : /靠近|远离|占比|主体.*[大小]|取景范围|长焦/.test(text) ? 2 : 3
+  const selected = items.map((text, index) => ({ text, index, rank: priority(text) }))
+    .sort((a, b) => a.rank - b.rank || a.index - b.index)[0]?.text
+  if (!selected || /构图较稳定|构图关系较稳定/.test(selected)) return '✓ 当前构图比较稳定'
+  const text = friendlyText(selected)
+  if (/向左/.test(text)) return '← 可以稍向左调整'
+  if (/向右/.test(text)) return '→ 可以稍向右调整'
+  if (/减少.*上方留白/.test(text)) return '↑ 可以减少一些上方留白'
+  if (/增加.*上方空间/.test(text)) return '可以增加一些人物上方空间'
+  return text
+}

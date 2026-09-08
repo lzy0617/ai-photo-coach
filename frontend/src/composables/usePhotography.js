@@ -1,9 +1,12 @@
 import { computed, onUnmounted, ref } from 'vue'
 import { analyzeFast } from '../api/photography'
+import { prepareFastImage } from '../utils/image'
 import { friendlyText, NO_PERSON_MESSAGE } from '../utils/presentation'
 export function usePhotography() {
   const source = ref(''), file = ref(null), result = ref(null), loading = ref(false), error = ref('')
   let selection = 0
+  // 单独缓存快速分析副本，失败重试无需再次压缩；file 始终保留原图。
+  let fastFile = null
   const noPerson = computed(() => !!result.value && (result.value.composition.status === 'no_person' || !result.value.detection.persons.length))
   const multiplePersons = computed(() => (result.value?.detection?.persons?.length ?? 0) > 1)
   const suggestions = computed(() => {
@@ -14,7 +17,10 @@ export function usePhotography() {
   async function analyze() {
     if (!file.value || loading.value) return
     loading.value = true; error.value = ''; result.value = null
-    try { result.value = await analyzeFast(file.value) }
+    try {
+      fastFile ??= await prepareFastImage(file.value)
+      result.value = await analyzeFast(fastFile)
+    }
     catch (e) { error.value = e.message }
     finally { loading.value = false }
   }
@@ -35,6 +41,7 @@ export function usePhotography() {
     if (token !== selection) { URL.revokeObjectURL(url); return }
     if (source.value) URL.revokeObjectURL(source.value)
     source.value = url; file.value = next; result.value = null
+    fastFile = null
     await analyze()
   }
   onUnmounted(() => { selection++; if (source.value) URL.revokeObjectURL(source.value) })

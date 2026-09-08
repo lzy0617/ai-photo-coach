@@ -31,3 +31,15 @@ test('multi-person and missing-person states take priority over stable compositi
   assert.equal(guideStatus(result, true, false), '等待清晰人物')
   assert.equal(guideStatus(null, false, false), '等待取景')
 })
+
+test('live advice prioritizes position, then headroom, then size, and no-person overrides all', async () => {
+  const { liveAdvice } = await import('../src/utils/presentation.js')
+  const result = { detection: { persons: [{}] }, composition: { suggestions: ['建议靠近人物或使用更长焦距', '建议减少人物上方空白区域', '建议人物向左移动约 12% 画面宽度'] } }
+  assert.equal(liveAdvice(result), '← 可以稍向左调整')
+  result.composition.suggestions.pop()
+  assert.equal(liveAdvice(result), '↑ 可以减少一些上方留白')
+  result.composition.suggestions = []
+  assert.equal(liveAdvice(result), '✓ 当前构图比较稳定')
+  result.detection.persons = []
+  assert.match(liveAdvice(result), /暂未检测到清晰人物/)
+})

@@ -721,3 +721,81 @@ footer {
   .suggestion-card h3 { font-size: 21px; }
   footer { flex-wrap: wrap; line-height: 1.8; }
 }
+
+/* 视频元素与覆盖层占据同一个原始比例矩形，无裁切、无镜像。 */
+.video-stage { display: flex; justify-content: center; background: #edf3f8; }
+.video-frame { position: relative; max-width: 100%; overflow: hidden; }
+.video-frame video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.camera-placeholder { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; color: #58748a; background: #edf3f8; }
+.live-advice { padding: 8px 4px; }
+.live-advice h3 { font-size: 21px; color: #255675; }
+.live-advice p { margin-top: 8px; }
+.live-guide .notice, .live-guide .error-card { margin: 0; }
+.live-guide .simulation-upload { margin-top: 12px; }
+
+.camera-controls { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px; background: #f8fbfe; }
+.zoom-controls { display: flex; align-items: center; gap: 10px; width: min(100%, 380px); }
+.zoom-controls button, .switch-camera { min-width: 44px; min-height: 44px; border: 1px solid #dce6ee; border-radius: 12px; color: #426b89; background: white; }
+.zoom-controls button { font-size: 20px; }
+.zoom-controls input { flex: 1; min-width: 0; min-height: 44px; accent-color: var(--blue); }
+.zoom-controls output { min-width: 40px; font-variant-numeric: tabular-nums; }
+.switch-camera { padding: 8px 10px; font-size: 12px; }
+.shutter-button { display: grid; place-items: center; width: 78px; height: 78px; border: 3px solid #478fbf; border-radius: 50%; background: white; margin-top: 4px; padding: 5px; box-shadow: 0 3px 12px #25465c12; }
+.shutter-button span { width: 100%; height: 100%; border-radius: 50%; background: #d8edfc; border: 1px solid #c3e1f6; }
+.shutter-button:active:not(:disabled) span { background: #a6d4f3; }
+.live-guide .viewer-tools { border-top: 1px solid var(--border); }
+.live-guide .viewer-tools button { font-size: 12px; background: transparent; }
+
+/* Camera-first：预留紧凑顶部、缩放和快门高度，坐标容器只包含完整视频。 */
+.camera-header .header-inner { padding: 8px 16px; min-height: 56px; max-width: 700px; }
+.camera-header .brand { font-size: 18px; }
+.camera-header .brand small { display: none; }
+.camera-header .brand-mark { width: 36px; height: 36px; border-radius: 10px; }
+.camera-header .edge-status { min-height: 36px; }
+.camera-main { max-width: 700px; padding: 0 12px max(8px, env(safe-area-inset-bottom)); }
+.camera-main .tabs { margin: 0 0 10px; gap: 0; }
+.camera-main .tabs button { flex: 1; justify-content: center; min-height: 46px; padding: 10px 0; }
+.camera-main .tabs button span { display: none; }
+.camera-main .guide-workspace, .camera-main .live-guide-active { gap: 8px; }
+.camera-session { --camera-frame-height: max(160px, calc(100svh - 274px - env(safe-area-inset-bottom))); border-radius: 14px; }
+.camera-session .video-stage { background: #e5edf5; }
+.camera-session .video-frame { flex-shrink: 0; }
+.camera-session .video-frame video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.camera-session .camera-placeholder { font-size: 16px; }
+.camera-status-hud { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 6px; }
+.camera-telemetry { display: flex; flex-wrap: wrap; gap: 4px 9px; padding: 7px 9px; color: #fff; background: #17344acc; border-radius: 9px; backdrop-filter: blur(8px); font-size: 12px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+.camera-telemetry .edge-connected { color: #b8eedf; }
+.camera-display-controls { display: flex; margin-left: auto; gap: 4px; }
+.camera-display-controls button { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid #ffffff50; border-radius: 10px; background: #17344acc; color: #fff; }
+.camera-display-controls button[aria-pressed="false"] { color: #a6b4be; background: #17344a99; }
+.live-advice-hud { position: absolute; bottom: 10px; left: 10px; right: 10px; padding: 10px 12px; background: #17344adb; color: #fff; border: 1px solid #ffffff30; backdrop-filter: blur(10px); border-radius: 12px; pointer-events: none; }
+.hud-advice-text { font-size: 17px; line-height: 1.45; height: 2.9em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.hud-note { font-size: 12px; line-height: 1.5; margin-top: 3px; color: #d8e7f3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.camera-session .camera-controls { gap: 4px; padding: 6px 14px 10px; }
+.camera-session .zoom-controls { gap: 8px; height: 40px; max-width: 340px; }
+.camera-session .zoom-controls button { min-width: 40px; min-height: 40px; border: 0; background: transparent; }
+.camera-session .zoom-controls input { min-height: 40px; }
+.camera-control-note { font-size: 12px; color: var(--muted); height: 40px; display: flex; align-items: center; max-width: 100%; overflow: hidden; }
+.camera-action-row { display: flex; justify-content: space-evenly; align-items: center; width: 100%; max-width: 360px; height: 78px; }
+.camera-session .shutter-button { width: 72px; height: 72px; margin: 0; flex-shrink: 0; }
+.camera-icon-button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 1px solid #dce6ee; background: #eef5fb; color: #426b89; width: 56px; height: 56px; border-radius: 50%; }
+.camera-icon-button > span { font-size: 24px; line-height: 1; }
+.camera-icon-button small { font-size: 12px; }
+.camera-resume-row .button { min-width: 160px; }
+@media (max-height: 600px) {
+  .camera-session { --camera-frame-height: max(160px, calc(100svh - 256px - env(safe-area-inset-bottom))); }
+  .camera-header .header-inner { min-height: 48px; padding-block: 4px; }
+  .camera-main .tabs button { min-height: 40px; padding-block: 7px; }
+  .camera-main .tabs { margin-bottom: 6px; }
+}
+
+.save-photo-actions .button { width: 100%; }
+.save-photo-actions p { margin-top: 8px; line-height: 1.8; }
+.technical-values dd { overflow-wrap: anywhere; text-align: right; }
+.camera-header .brand { font-size: 16px; gap: 7px; }
+.camera-header .edge-status { font-size: 12px; padding-inline: 8px; }
+@media (max-width: 375px) {
+  .camera-header .header-inner { padding-inline: 10px; gap: 6px; }
+  .camera-header .brand-mark { width: 30px; height: 30px; }
+  .camera-header .brand { font-size: 15px; }
+}
