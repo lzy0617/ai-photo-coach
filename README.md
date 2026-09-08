@@ -64,3 +64,5 @@ npm run build
 ```
 
 后端单元测试使用假的 VLM 和假的 Ascend detector，不需要 NPU。真实 ModelArts、SSH Tunnel、Orange Pi NPU、浏览器摄像头和移动网络仍需在对应设备上联调。
+
+完整的 Mac 本地端云启动顺序、环境变量、验收和故障排查见 [`docs/mac-local-service-guide.md`](docs/mac-local-service-guide.md)。
