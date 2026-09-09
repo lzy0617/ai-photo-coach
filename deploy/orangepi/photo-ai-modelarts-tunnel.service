@@ -1,0 +1,27 @@
+[Unit]
+Description=AI Photo Coach SSH tunnel to ModelArts VLM
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=root
+EnvironmentFile=/etc/photo-ai/modelarts-tunnel.env
+ExecStart=/usr/bin/ssh -NT \
+    -i ${MODELARTS_SSH_KEY} \
+    -p ${MODELARTS_SSH_PORT} \
+    -L 127.0.0.1:18000:127.0.0.1:8000 \
+    -o BatchMode=yes \
+    -o ConnectTimeout=15 \
+    -o ExitOnForwardFailure=yes \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=3 \
+    -o StrictHostKeyChecking=accept-new \
+    ${MODELARTS_SSH_USER}@${MODELARTS_SSH_HOST}
+Restart=always
+RestartSec=5
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

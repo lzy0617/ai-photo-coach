@@ -66,3 +66,11 @@ npm run build
 后端单元测试使用假的 VLM 和假的 Ascend detector，不需要 NPU。真实 ModelArts、SSH Tunnel、Orange Pi NPU、浏览器摄像头和移动网络仍需在对应设备上联调。
 
 完整的 Mac 本地端云启动顺序、环境变量、验收和故障排查见 [`docs/mac-local-service-guide.md`](docs/mac-local-service-guide.md)。
+
+香橙派到 ModelArts 的开机自动连接与断线重连见 [`docs/orangepi-auto-ssh-tunnel.md`](docs/orangepi-auto-ssh-tunnel.md)。
+
+手机或电脑通过香橙派局域网 IP 访问网页的部署、验收与排障流程见 [`docs/orangepi-web-ip-access.md`](docs/orangepi-web-ip-access.md)。
+
+不购买域名、使用 Cloudflare Quick Tunnel 临时生成公网 HTTPS 地址的流程见 [`docs/cloudflare-quick-tunnel.md`](docs/cloudflare-quick-tunnel.md)。
+
+项目功能、端云架构、接口、数据流、容错策略和当前边界见 [`docs/project-overview-and-architecture.md`](docs/project-overview-and-architecture.md)。
