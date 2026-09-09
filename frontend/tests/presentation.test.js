@@ -6,6 +6,8 @@ test('engineering suggestions become gentle actions without movement percentages
   assert.equal(friendlyText('建议人物向左移动约 12% 画面宽度'), '可以尝试让人物稍向左移动。')
   assert.equal(friendlyText('建议人物向右移动约 8% 画面宽度'), '可以尝试让人物稍向右移动。')
   assert.equal(friendlyText('建议减少人物上方空白区域'), '可以尝试减少一些上方留白。')
+  assert.equal(friendlyText('建议稍微远离人物'), '可以稍微远离人物，保留更多环境。')
+  assert.equal(friendlyText('如果希望保留更多环境，可以扩大取景范围'), '可以适当扩大取景，保留更多环境。')
   assert.equal(friendlyText('头顶留白较自然'), '上方留白较自然')
   assert.equal(friendlyText('新的后端建议'), '新的后端建议')
   assert.equal(friendlyText(null), '')

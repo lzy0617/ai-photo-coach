@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { normalizedBox } from '../src/utils/overlay.js'
+import { boxLabelAlignment, normalizedBox } from '../src/utils/overlay.js'
 test('normalized coordinates take priority regardless of display size', () => {
   const box = { x1: .2549, y1: .2969, x2: .6306, y2: .9938 }
   assert.deepEqual(normalizedBox({ bbox_norm: box, bbox: { x1: 0, y1: 0, x2: 1, y2: 1 } }, { width: 1440, height: 1920 }), box)
@@ -13,4 +13,11 @@ test('invalid or inverted boxes do not render; out-of-bounds boxes are clipped',
   assert.equal(normalizedBox({ bbox_norm: { x1: .8, y1: 0, x2: .2, y2: 1 } }), null)
   assert.equal(normalizedBox({ bbox_norm: { x1: NaN, y1: 0, x2: 1, y2: 1 } }), null)
   assert.deepEqual(normalizedBox({ bbox_norm: { x1: -.1, y1: 0, x2: 1.2, y2: 1 } }), { x1: 0, y1: 0, x2: 1, y2: 1 })
+})
+
+test('box labels expand toward the inside of the image', () => {
+  assert.equal(boxLabelAlignment({ x1: .05, x2: .15 }), 'left')
+  assert.equal(boxLabelAlignment({ x1: .8, x2: .95 }), 'right')
+  assert.equal(boxLabelAlignment({ x1: .4, x2: .6 }), 'left')
+  assert.equal(boxLabelAlignment(null), 'left')
 })

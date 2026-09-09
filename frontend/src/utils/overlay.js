@@ -8,3 +8,12 @@ export function normalizedBox(person, image) {
   const clamped = Object.fromEntries(Object.entries(box).map(([key, value]) => [key, Math.max(0, Math.min(1, value))]))
   return clamped.x2 > clamped.x1 && clamped.y2 > clamped.y1 ? clamped : null
 }
+
+/**
+ * 标签不应受人物框宽度限制。人物位于画面右半区时，让标签从框的
+ * 右边缘向左展开；其余情况从左边缘向右展开，减少被画面裁切的概率。
+ */
+export function boxLabelAlignment(box) {
+  if (!box || !Number.isFinite(box.x1) || !Number.isFinite(box.x2)) return 'left'
+  return (box.x1 + box.x2) / 2 > 0.5 ? 'right' : 'left'
+}
