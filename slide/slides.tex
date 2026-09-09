@@ -1,0 +1,309 @@
+% !TeX program = xelatex
+% 从 slide/ 目录编译；逐页讲述时间与代码出处见 README.md。
+\documentclass[aspectratio=169,11pt]{beamer}
+\usepackage[UTF8,fontset=fandol]{ctex}
+\usepackage{graphicx,tikz,booktabs,tabularx,listings}
+\usetikzlibrary{positioning,arrows.meta}
+\definecolor{accent}{HTML}{245777}
+\definecolor{ink}{HTML}{263440}
+\definecolor{muted}{HTML}{657582}
+\definecolor{pale}{HTML}{F0F3F5}
+\setbeamercolor{normal text}{fg=ink,bg=white}
+\setbeamercolor{structure}{fg=accent}
+\setbeamercolor{frametitle}{fg=accent}
+\setbeamercolor{block title}{fg=accent,bg=pale}
+\setbeamercolor{block body}{fg=ink,bg=pale}
+\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize item}{\small\textbullet}
+\setbeamertemplate{footline}{\hspace{0.55cm}\textcolor{muted}{\scriptsize AI Photo Coach\quad 端云协同智能摄影辅助}\hfill\textcolor{muted}{\scriptsize\insertframenumber/\inserttotalframenumber}\hspace{0.55cm}\vspace{0.22cm}}
+\addtobeamertemplate{frametitle}{}{\vspace{0.12cm}}
+\setbeamersize{text margin left=0.65cm,text margin right=0.65cm}
+\setlength{\parskip}{0.3em}
+% 所有素材均位于 assets/；缺失时保留尺寸并显示文件名。
+\newcommand{\asset}[3]{\IfFileExists{assets/#1}{\begin{minipage}[c][#3][c]{#2}\centering\includegraphics[width=#2,height=#3,keepaspectratio]{assets/#1}\end{minipage}}{\begingroup\setlength{\fboxsep}{0pt}\colorbox{pale}{\begin{minipage}[c][#3][c]{#2}\centering\color{muted}\tiny 素材待补充\par\ttfamily\expandafter\detokenize\expandafter{#1}\end{minipage}}\endgroup}}
+\newcommand{\qwenfile}{logo_qwen.png}
+\IfFileExists{assets/logo_qwen.png}{}{\IfFileExists{assets/log_qwen.png}{\renewcommand{\qwenfile}{log_qwen.png}}{}}
+\newcommand{\takeaway}[1]{\vspace{0.2cm}\begin{beamercolorbox}[sep=0.13cm,wd=\linewidth]{block body}\centering\small\color{accent}#1\end{beamercolorbox}}
+\tikzset{box/.style={draw=accent!30,fill=pale,rounded corners=2pt,align=center,minimum height=2.65cm,text width=2.8cm,font=\footnotesize},arr/.style={-{Stealth[length=2mm]},thick,accent}}
+\lstset{basicstyle=\ttfamily\fontsize{9.5}{10.5}\selectfont,keywordstyle=\color{accent}\bfseries,commentstyle=\color{muted},stringstyle=\color{accent},backgroundcolor=\color{pale},frame=none,breaklines=true,columns=fullflexible,keepspaces=true,showstringspaces=false,xleftmargin=0.15cm,xrightmargin=0.15cm,aboveskip=0.12cm,belowskip=0.12cm}
+\begin{document}
+
+\begin{frame}[plain]
+\vspace{0.65cm}
+\begin{center}
+{\color{accent}\fontsize{25}{32}\selectfont\bfseries AI Photo Coach\par 智能摄影辅助工具\par}
+{\color{muted}\normalsize 基于端云协同的智能人像摄影辅助系统\par}
+\vspace{0.25cm}
+{\large 2026短\quad 图灵实践课II 课程考核项目答辩\par}
+\end{center}
+\vspace{0.4cm}
+\vfill
+\begin{columns}[b,onlytextwidth]
+\column{0.48\textwidth}
+\small 小组成员：郭名扬\quad 刘泽宇\par
+\vspace{0.2cm}\scriptsize\color{muted}2026 年 9 月 10 日\par
+\column{0.49\textwidth}\raggedleft
+\asset{logo_orangepi.png}{2.3cm}{1.3cm}\hspace{0.3cm}
+\asset{logo_ascend.png}{2.3cm}{1.3cm}\hspace{0.3cm}
+\asset{logo_yolo.png}{2.3cm}{1.3cm}\hspace{0.3cm}
+\asset{\qwenfile}{2.3cm}{1.3cm}
+\end{columns}\vspace{0.5cm}
+\end{frame}
+
+\begin{frame}{课题背景与目标}
+\begin{columns}[T,onlytextwidth]
+\column{0.47\textwidth}
+\asset{logo_yolo.png}{2.3cm}{1.3cm}
+\begin{block}{拍摄中：实时指导}
+\begin{itemize}
+\item 实时、低延迟的构图反馈
+\item 明确告诉用户如何调整取景
+\item 关注位置、留白、主体大小
+\end{itemize}
+\end{block}
+\column{0.47\textwidth}
+\asset{\qwenfile}{2.3cm}{1.3cm}
+\begin{block}{拍摄后：深度评价}
+\begin{itemize}
+\item 理解光线与背景干扰
+\item 分析姿态与画面表达
+\item 给出有原因的摄影建议
+\end{itemize}
+\end{block}
+\end{columns}
+\vspace{0.3cm}
+\small 单靠 CV 难以理解语义；全部依赖 VLM 又不适合逐帧调用。
+\takeaway{采用端云协同：高频量化留在边缘，低频语义交给云端。}
+\end{frame}
+
+\begin{frame}{总体技术方案}{边缘链路：高频量化任务}
+\centering
+\begin{tikzpicture}[node distance=0.32cm]
+\node[box] (a) {\asset{Vue.png}{1.7cm}{1cm}\\Vue 3\\Canvas\\Camera API\\Browser};
+\node[box,right=of a] (b) {\asset{logo_orangepi.png}{2.6cm}{1.7cm}\\Orange Pi\\AI Pro 20T\\Nginx Web 入口};
+\node[box,right=of b] (c) {\asset{logo_fastapi.png}{2.6cm}{1.7cm}\\FastAPI\\API 请求处理\\边缘分析服务};
+\node[box,right=of c] (d) {\asset{logo_ascend.png}{1.7cm}{1cm}\\Ascend 310B1\\YOLOv5s OM\\ACLLite\\OpenCV\\构图规则};
+\draw[arr] (a)--(b);\draw[arr] (b)--(c);\draw[arr] (c)--(d);
+\end{tikzpicture}
+\vspace{0.45cm}
+\begin{itemize}
+\item 摄像头帧 / 照片，经浏览器压缩为最长边 640px 的 JPEG。
+\item Orange Pi 完成人物检测、几何构图计算与亮度统计。
+\item 分析结果返回浏览器，更新检测框、构图参考与实时建议。
+\end{itemize}
+\takeaway{边缘端负责“快速测量”，缩短拍摄反馈链路。}
+\end{frame}
+
+\begin{frame}{总体技术方案}{云端链路：低频语义任务}
+\centering
+\begin{tikzpicture}[node distance=0.32cm]
+\node[box] (a) {\asset{logo_fastapi.png}{1.7cm}{1cm}\\FastAPI\\关键帧 + CV metrics};
+\node[box,right=of a] (b) {\asset{ssh.png}{1.7cm}{1cm}\\SSH Tunnel\\本地端口转发};
+\node[box,right=of b] (c) {\asset{logo_modelarts.png}{1.7cm}{1cm}\\华为云 ModelArts\\Ascend 910B3};
+\node[box,right=of c] (d) {\asset{\qwenfile}{1.7cm}{1cm}\\Qwen3-VL\\8B-Instruct};
+\draw[arr] (a)--(b);\draw[arr] (b)--(c);\draw[arr] (c)--(d);
+\end{tikzpicture}
+\vspace{0.4cm}
+\begin{itemize}
+\item 用户主动点击深度分析，按需提交关键帧和 YOLO/CV 指标。
+\item Orange Pi 通过 SSH 本地端口转发访问云端 VLM 服务。
+\item 演示网页可通过 Cloudflare Quick Tunnel 提供 HTTPS 入口。
+\end{itemize}
+\takeaway{云端大模型负责“深度理解”，补充画面的语义评价。}
+\end{frame}
+
+\begin{frame}{关键技术一：边缘端实时指导}
+\begin{columns}[c,onlytextwidth]
+\column{0.53\textwidth}\centering
+\asset{screenshot_live_advice.png}{\linewidth}{7cm}
+\column{0.43\textwidth}
+\centering
+\begin{tikzpicture}[node distance=0.13cm, every node/.style={font=\small}]
+\node (a) {Camera frame};
+\node[below=of a] (b) {Canvas：640px JPEG};
+\node[below=of b] (c) {\texttt{/api/analyze-fast}};
+\node[below=of c] (d) {YOLO bbox};
+\node[below=of d] (e) {构图规则};
+\node[below=of e] (f) {实时建议};
+\foreach \s/\t in {a/b,b/c,c/d,d/e,e/f}{\draw[arr] (\s)--(\t);}
+\end{tikzpicture}
+\vspace{0.2cm}
+\begin{block}{反馈内容}
+\small 人物位置\quad 上方留白\par 主体占比\quad 亮度统计
+\end{block}
+\end{columns}
+\end{frame}
+
+\begin{frame}{关键技术二：构图规则与可解释建议}
+\begin{columns}[c,onlytextwidth]
+\column{0.54\textwidth}\centering
+\asset{screenshot_photo_analysis.png}{\linewidth}{7cm}
+\column{0.42\textwidth}
+{\color{accent}\large bbox $\rightarrow$ 几何指标}
+\small
+\begin{align*}
+\text{center}_x &= \frac{x_1+x_2}{2W}\\
+\text{headroom} &= \frac{y_1}{H}\\
+\text{area ratio} &= \frac{(x_2-x_1)(y_2-y_1)}{WH}
+\end{align*}
+\vspace{-0.25cm}
+\begin{itemize}
+\item 兼顾三分线与突出主体的居中构图。
+\item 位置、留白、占比形成构图参考分。
+\item 将偏差转换成移位、调整取景等建议。
+\end{itemize}
+\takeaway{YOLO/CV 提供几何构图参考；\par 亮度单独统计，不计入构图分。}
+\end{columns}
+\end{frame}
+
+\begin{frame}{关键技术三：云端 Qwen3-VL 深度分析}
+\begin{columns}[c,onlytextwidth]
+\column{0.53\textwidth}\centering
+\asset{screenshot_deep_analysis.png}{\linewidth}{7cm}
+\column{0.43\textwidth}
+\begin{block}{输入}
+\small 当前关键帧 image + cv\_metrics
+\end{block}
+\centering $\downarrow$\par
+{\color{accent}\large Qwen3-VL-8B-Instruct}\par
+$\downarrow$
+\begin{block}{结构化输出}
+\small scene / lighting / background\par
+pose / visual\_expression / suggestions
+\end{block}
+\raggedright\small 结合几何指标理解场景、光线、背景、姿态和表达，提供详细评价与可执行建议。
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{代码展示}{A · 实时串行分析循环}
+\setlength{\parskip}{0pt}
+\small 项目代码节选，省略异常处理和状态校验；保留真实执行顺序。
+\begin{lstlisting}[language=Java]
+while (!signal.aborted) {
+  let delay = 250
+  // ...
+  try { image = await camera.capture(video.value) }
+  // ...
+  const result = await analyzeFast(image, { signal })
+  // ...
+  liveResult.value = result
+  stability.value = nextStability(stability.value, result)
+  // ...
+  await sleep(delay, signal)
+}
+\end{lstlisting}
+\takeaway{采集 $\rightarrow$ 等待分析 $\rightarrow$ 更新 UI $\rightarrow$ 等待下一轮；\par 避免 setInterval 导致请求堆积，启动状态守卫防止重复循环。}
+\scriptsize\color{muted}来源：\texttt{frontend/src/views/LiveGuide.vue}，\texttt{loop()} / \texttt{start()}
+\end{frame}
+
+\begin{frame}[fragile]{代码展示}{B · 构图规则核心}
+\setlength{\parskip}{0pt}
+\small 项目表达式节选，合并换行；\texttt{cx\_ratio} 即归一化的 center\_x。
+\begin{lstlisting}[language=Python]
+cx = (x1 + x2) / 2
+cx_ratio = cx / W
+person_width = max(0, x2 - x1)
+person_height = max(0, y2 - y1)
+person_area = person_width * person_height
+image_area = W * H
+area_ratio = person_area / image_area
+headroom_ratio = y1 / H
+# ...
+score = round(position_score * 0.45
+              + headroom_score * 0.30
+              + subject_size_score * 0.25)
+\end{lstlisting}
+\takeaway{归一化指标减少分辨率影响；规则与权重可追溯、可解释。}
+\scriptsize\color{muted}来源：\texttt{edge-backend/composition.py}，\texttt{analyze\_composition()}
+\end{frame}
+
+\begin{frame}[fragile]{代码展示}{C · 图像与指标共同驱动 VLM}
+\setlength{\parskip}{0pt}
+\small 边缘端请求节选：图像和指标通过同一请求送达云端。
+\begin{lstlisting}[language=Python]
+response = self._client.post(
+    self.api_url,
+    files={"image": ("frame.jpg", image_bytes, "image/jpeg")},
+    data={"cv_metrics": json.dumps(metrics, ensure_ascii=False)},
+)
+\end{lstlisting}
+\small 云端消息节选：\texttt{build\_prompt(metrics)} 写入指标与 JSON 输出约束。
+\begin{lstlisting}[language=Python]
+"content": [
+    {"type": "image", "image": image},
+    {"type": "text", "text": build_prompt(metrics)},
+],
+\end{lstlisting}
+\takeaway{提示词要求“只输出一个合法 JSON 对象”；\par 云端解析 JSON，边缘端归一化字段，异常时返回可恢复错误。}
+\scriptsize\color{muted}来源：\texttt{edge-backend/services/vlm\_client.py}；\texttt{cloud-vlm/app.py}
+\end{frame}
+
+\begin{frame}{项目演示}
+\vspace{1.1cm}
+\centering\Large\color{accent}
+实时指导\quad $\rightarrow$\quad 拍摄\quad $\rightarrow$\quad 照片诊断\quad $\rightarrow$\quad AI 深度分析
+\vfill
+% 视频外部播放，预留路径 assets/demo.mp4；本页不嵌入媒体。
+\end{frame}
+
+\begin{frame}{问题与工程优化}
+\renewcommand{\arraystretch}{1.65}
+\small
+\begin{tabularx}{\linewidth}{@{}p{3.5cm}X@{}}
+\toprule
+\textbf{问题} & \textbf{解决方法}\\
+\midrule
+大图上传慢 & 浏览器端压缩为最长边 640px 的 JPEG\\
+实时请求堆积 & 串行请求 + 互斥状态守卫，避免重复启动\\
+YOLO 评价机械 & 改为“构图参考”，语义理解交给 VLM\\
+云端慢或失败 & 快速分析继续可用，深度分析降级并提示重试\\
+手机摄像头 HTTPS 要求 & Cloudflare Quick Tunnel 提供演示入口\\
+\bottomrule
+\end{tabularx}
+\vspace{0.3cm}
+\takeaway{把即时反馈和深度评价分开，让云端故障不阻断基本拍摄流程。}
+\end{frame}
+
+\begin{frame}{总结与展望}
+\begin{columns}[T,onlytextwidth]
+\column{0.31\textwidth}
+\begin{block}{已完成}
+\small
+实时指导、照片诊断\par
+边缘 YOLO\par
+云端 Qwen3-VL\par
+端云连接、演示网页
+\end{block}
+\column{0.31\textwidth}
+\begin{block}{当前边界}
+\small
+面向单人人像\par
+构图分并非通用审美分\par
+VLM 有生成不确定性
+\end{block}
+\column{0.31\textwidth}
+\begin{block}{未来优化}
+\small
+固定公网入口\par
+异步深度任务\par
+更多构图规则\par
+真实数据评测集
+\end{block}
+\end{columns}
+\vspace{0.65cm}
+\centering\large\color{accent}边缘 AI 提供即时反馈，云端 AI 理解摄影表达。
+\end{frame}
+
+\begin{frame}
+\vfill
+\begin{center}
+    {\Huge \textbf{Thank You}}
+
+    \vspace{1.8cm}
+
+    {\small 小组成员：郭名扬\quad 刘泽宇\par}
+\end{center}
+\end{frame}
+\end{document}
+
