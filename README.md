@@ -74,3 +74,5 @@ npm run build
 不购买域名、使用 Cloudflare Quick Tunnel 临时生成公网 HTTPS 地址的流程见 [`docs/cloudflare-quick-tunnel.md`](docs/cloudflare-quick-tunnel.md)。
 
 项目功能、端云架构、接口、数据流、容错策略和当前边界见 [`docs/project-overview-and-architecture.md`](docs/project-overview-and-architecture.md)。
+
+与答辩幻灯片逐页对应的约 10 分钟展示讲稿见 [`docs/presentation-script-10min.md`](docs/presentation-script-10min.md)。
